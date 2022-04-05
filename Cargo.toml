@@ -1,11 +1,13 @@
 [package]
 name = "woff2"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Brian Hanechak <brianh@cimpress.com>", "Emily Crandall Fleischman <emily.fleischman@cimpress.com>"]
 edition = "2021"
 license = "Apache-2.0"
 keywords = ["woff2", "font", "parse"]
 description = "WOFF2 decompression library"
+repository = "https://github.com/Cimpress-MCP/woff2-rs"
+readme = "readme.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
