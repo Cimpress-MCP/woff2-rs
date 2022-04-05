@@ -5,6 +5,7 @@ authors = ["Brian Hanechak <brianh@cimpress.com>", "Emily Crandall Fleischman <e
 edition = "2021"
 license = "Apache-2.0"
 keywords = ["woff2", "font", "parse"]
+description = "WOFF2 decompression library"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
