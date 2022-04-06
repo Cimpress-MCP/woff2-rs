@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::{
     checksum::{calculate_font_checksum_adjustment, set_checksum_adjustment, ChecksumError},
-    magic_numbers::{TTF_CFF_FLAVOR, TTF_COLLECTION_FLAVOR, TTF_TRUE_TYPE_FLAVOR},
+    magic_numbers::{TTF_CFF_FLAVOR, TTF_COLLECTION_FLAVOR, TTF_TRUE_TYPE_FLAVOR, WOFF2_SIGNATURE},
     ttf_header::{calculate_header_size, TableDirectory},
     woff2::{
         collection_directory::{CollectionHeader, CollectionHeaderError},
@@ -59,6 +59,11 @@ impl From<std::io::Error> for DecodeError {
     fn from(e: std::io::Error) -> Self {
         DecodeError::Invalid(e.to_string())
     }
+}
+
+/// Returns whether the buffer starts with the WOFF2 magic number.
+pub fn is_woff2(input_buffer: &[u8]) -> bool {
+    input_buffer.starts_with(&WOFF2_SIGNATURE.0)
 }
 
 /// Converts a WOFF2 font in `input_buffer` into a TTF format font.
@@ -145,5 +150,10 @@ mod tests {
         let ttf = convert_woff2_to_ttf(&mut Cursor::new(buffer)).unwrap();
         assert_eq!(None, ttf_parser::fonts_in_collection(&ttf));
         let _parsed_ttf = ttf_parser::Face::from_slice(&ttf, 1).unwrap();
+    }
+
+    #[test]
+    fn sample_font_is_woff2() {
+        assert!(super::is_woff2(LATO_V22_LATIN_REGULAR));
     }
 }

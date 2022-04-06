@@ -1,6 +1,6 @@
 [package]
 name = "woff2"
-version = "0.1.1"
+version = "0.2.1"
 authors = ["Brian Hanechak <brianh@cimpress.com>", "Emily Crandall Fleischman <emily.fleischman@cimpress.com>"]
 edition = "2021"
 license = "Apache-2.0"
