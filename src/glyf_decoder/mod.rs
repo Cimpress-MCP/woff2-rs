@@ -5,7 +5,7 @@ use bytes::{Buf, BufMut};
 use safer_bytes::{error::Truncated, SafeBuf};
 use thiserror::Error;
 
-use crate::buffer_util::{BufExt, pad_to_multiple_of_four};
+use crate::buffer_util::{pad_to_multiple_of_four, BufExt};
 
 mod x_y_triplet;
 use x_y_triplet::COORD_LUT;

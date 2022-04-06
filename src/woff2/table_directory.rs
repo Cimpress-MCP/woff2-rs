@@ -5,9 +5,9 @@ use four_cc::FourCC;
 use thiserror::Error;
 
 use crate::{
+    buffer_util::{pad_to_multiple_of_four, Base128Error, BufExt, SafeBuf, TruncatedError},
     checksum::{calculate_checksum, set_checksum_adjustment, ChecksumError},
     glyf_decoder::{decode_glyf_table, GlyfDecoderError},
-    buffer_util::{pad_to_multiple_of_four, Base128Error, BufExt, SafeBuf, TruncatedError},
     ttf_header::TableRecord,
 };
 

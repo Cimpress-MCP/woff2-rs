@@ -4,7 +4,7 @@ use bytes::Buf;
 use four_cc::FourCC;
 use thiserror::Error;
 
-use crate::buffer_util::BufExt;
+use crate::{buffer_util::BufExt, magic_numbers::WOFF2_SIGNATURE};
 
 #[derive(Error, Debug)]
 pub enum Woff2HeaderError {
@@ -60,7 +60,7 @@ impl Woff2Header {
     }
 
     pub fn is_valid_header(&self) -> Result<(), Woff2HeaderError> {
-        if self.signature != FourCC(*b"wOF2") {
+        if self.signature != WOFF2_SIGNATURE {
             return Err(Woff2HeaderError::InvalidMagicWord);
         }
 
