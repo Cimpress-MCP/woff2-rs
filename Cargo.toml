@@ -14,7 +14,7 @@ readme = "readme.md"
 [dependencies]
 brotli = { version = "3.3.3", default-features = false, features = ["std"] }
 bytes = "1.1.0"
-four-cc = "0.1.0"
+four-cc = "0.2.0"
 safer-bytes = "0.2.0"
 thiserror = "1.0.30"
 bitvec = "1.0.0"

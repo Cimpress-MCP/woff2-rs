@@ -140,13 +140,23 @@ pub fn convert_woff2_to_ttf(input_buffer: &mut impl Buf) -> Result<Vec<u8>, Deco
 mod tests {
     use std::io::Cursor;
 
-    use crate::test_resources::LATO_V22_LATIN_REGULAR;
+    use crate::test_resources::{FONTAWESOME_REGULAR_400, LATO_V22_LATIN_REGULAR};
 
     use super::convert_woff2_to_ttf;
 
     #[test]
     fn read_sample_font() {
         let buffer = LATO_V22_LATIN_REGULAR;
+        let ttf = convert_woff2_to_ttf(&mut Cursor::new(buffer)).unwrap();
+        assert_eq!(None, ttf_parser::fonts_in_collection(&ttf));
+        let _parsed_ttf = ttf_parser::Face::from_slice(&ttf, 1).unwrap();
+    }
+    #[test]
+    // Spec: https://www.w3.org/TR/WOFF2/#table_order
+    // The loca table MUST follow the glyf table in the table directory. When WOFF2 file contains individually encoded font file, the table directory MAY contain other tables inserted between glyf and loca tables; however when WOFF2 contains a font collection file each loca table MUST immediately follow its corresponding glyf table. For example, the following order of tables: 'cmap', 'glyf', 'hhea', 'hmtx', 'loca', 'maxp' ... is acceptable for individually encoded font files;
+    fn read_loca_is_not_after_glyf_font() {
+        // In this test font, the loca table does not follow the glyf table.
+        let buffer = FONTAWESOME_REGULAR_400;
         let ttf = convert_woff2_to_ttf(&mut Cursor::new(buffer)).unwrap();
         assert_eq!(None, ttf_parser::fonts_in_collection(&ttf));
         let _parsed_ttf = ttf_parser::Face::from_slice(&ttf, 1).unwrap();
