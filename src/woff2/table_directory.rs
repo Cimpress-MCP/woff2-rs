@@ -84,11 +84,10 @@ impl Woff2TableDirectory {
             match table.tag {
                 GLYF_TAG => {
                     let next_table = tables_iter
-                        .next()
+                        .clone()
+                        .find(|t| t.tag == LOCA_TAG)
                         .ok_or(WriteTablesError::MissingLocaTable)?;
-                    if next_table.tag != LOCA_TAG {
-                        return Err(WriteTablesError::MissingLocaTable);
-                    }
+
                     if next_table.transformed != table.transformed {
                         return Err(WriteTablesError::GlyfLocaDifferentTransform);
                     }
@@ -126,8 +125,10 @@ impl Woff2TableDirectory {
                         );
                     }
                 }
-                // we handle `loca` table with `glyf` above
-                LOCA_TAG => return Err(WriteTablesError::MissingGlyfTable),
+                // - Spec: https://www.w3.org/TR/WOFF2/#table_order
+                // The loca table MUST follow the glyf table in the table directory. When WOFF2 file contains individually encoded font file, the table directory MAY contain other tables inserted between glyf and loca tables; For example, the following order of tables: 'cmap', 'glyf', 'hhea', 'hmtx', 'loca', 'maxp' ... is acceptable for individually encoded font files;
+                // TODO: however when WOFF2 contains a font collection file each loca table MUST immediately follow its corresponding glyf table.
+                LOCA_TAG => {}
                 HEAD_TAG => {
                     let offset = out_buffer.len();
                     let src = &decompressed_tables[table.get_source_range()];
@@ -290,16 +291,18 @@ pub const HMTX_TAG: FourCC = FourCC(*b"hmtx");
 
 #[derive(Debug, Error)]
 pub enum WriteTablesError {
-    #[error("glyf table not followed by loca table")]
+    #[error("missing loca table in the font")]
     MissingLocaTable,
-    #[error("loca table not preceded by glyf table")]
-    MissingGlyfTable,
+
     #[error("glyf table and loca table have different transformations")]
     GlyfLocaDifferentTransform,
+
     #[error("Truncated `head` table")]
     TruncatedHeadTable,
+
     #[error("Unsupported feature: {0}")]
     Unsupported(&'static str),
+
     #[error(transparent)]
     GlyfDecoderError(#[from] GlyfDecoderError),
 }
