@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-#[derive(Error, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Error)]
 pub enum DecodeError {
     #[error("Invalid Woff2 File {0}")]
     Invalid(String),
@@ -68,6 +68,8 @@ pub fn is_woff2(input_buffer: &[u8]) -> bool {
 
 /// Converts a WOFF2 font in `input_buffer` into a TTF format font.
 pub fn convert_woff2_to_ttf(input_buffer: &mut impl Buf) -> Result<Vec<u8>, DecodeError> {
+    let input_size = input_buffer.remaining();
+
     let header = Woff2Header::from_buf(input_buffer)?;
     header.is_valid_header()?;
 
@@ -95,10 +97,15 @@ pub fn convert_woff2_to_ttf(input_buffer: &mut impl Buf) -> Result<Vec<u8>, Deco
     brotli::BrotliDecompress(&mut input_buffer.reader(), &mut decompressed_tables)?;
 
     let compressed_size = stream_start_remaining - input_buffer.remaining();
-
-    if compressed_size != usize::try_from(header.total_compressed_size).unwrap() + 1 {
+    let size_until_stream_start = input_size - stream_start_remaining;
+    // Header provided compressed size with 4 bytes alignment.
+    let header_compressed_size =
+        ((size_until_stream_start + usize::try_from(header.total_compressed_size).unwrap() + 0b11)
+            & !0b11)
+            - size_until_stream_start;
+    if compressed_size != header_compressed_size {
         Err(DecodeError::Invalid(
-            "Compressed stream size does not match header".to_string(),
+            format!("Compressed stream size does not match header, expected {header_compressed_size} including padding, got {compressed_size}"),
         ))?;
     }
 
@@ -153,7 +160,10 @@ mod tests {
     }
     #[test]
     // Spec: https://www.w3.org/TR/WOFF2/#table_order
-    // The loca table MUST follow the glyf table in the table directory. When WOFF2 file contains individually encoded font file, the table directory MAY contain other tables inserted between glyf and loca tables; however when WOFF2 contains a font collection file each loca table MUST immediately follow its corresponding glyf table. For example, the following order of tables: 'cmap', 'glyf', 'hhea', 'hmtx', 'loca', 'maxp' ... is acceptable for individually encoded font files;
+    // The loca table MUST follow the glyf table in the table directory. When WOFF2 file contains individually encoded font file,
+    // the table directory MAY contain other tables inserted between glyf and loca tables; however when WOFF2 contains a font collection file
+    // each loca table MUST immediately follow its corresponding glyf table. For example, the following order of tables:
+    // 'cmap', 'glyf', 'hhea', 'hmtx', 'loca', 'maxp' ... is acceptable for individually encoded font files;
     fn read_loca_is_not_after_glyf_font() {
         // In this test font, the loca table does not follow the glyf table.
         let buffer = FONTAWESOME_REGULAR_400;
