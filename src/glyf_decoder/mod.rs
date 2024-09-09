@@ -46,16 +46,6 @@ struct Woff2GlyfDecoder<'a, T> {
     index_format: u16,
 }
 
-fn bit_stream_byte_length(bit_stream_bit_length: u16) -> u16 {
-    ((bit_stream_bit_length >> 5)
-        + if bit_stream_bit_length % 32 != 0 {
-            1
-        } else {
-            0
-        })
-        << 2
-}
-
 impl<'a> Woff2GlyfDecoder<'a, &'a [u8]> {
     fn has_read_all(&self) -> bool {
         let _n_contour_stream_remaining = self.n_contour_stream.remaining();
@@ -80,7 +70,7 @@ impl<'a> Woff2GlyfDecoder<'a, &'a [u8]> {
         let _ = table_buf.get_u16();
         let option_flags = table_buf.get_u16();
         let num_glyphs = table_buf.get_u16();
-        let bitmap_stream_length = bit_stream_byte_length(num_glyphs);
+        let bitmap_stream_length = ((num_glyphs + 31) >> 5) << 2; // 32bit blocks needed to store bit per glyph
         let index_format = table_buf.get_u16();
         let n_contour_stream_size = table_buf.get_u32();
         let n_points_stream_size = table_buf.get_u32();
@@ -93,7 +83,7 @@ impl<'a> Woff2GlyfDecoder<'a, &'a [u8]> {
         assert_eq!(table_buf.position() as usize, GLYF_HEADER_SIZE);
         let has_overlap_bit_stream = (option_flags & 0x01) == 0x01;
         let overlap_simple_bit_stream_size = if has_overlap_bit_stream {
-            bit_stream_byte_length(num_glyphs)
+            (num_glyphs + 7) >> 3 // bytes needed to store bit per glyph
         } else {
             0
         };
