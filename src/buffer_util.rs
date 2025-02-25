@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut};
+use bytes::{Buf, BufMut, TryGetError};
 use four_cc::FourCC;
 pub use safer_bytes::{error::Truncated as TruncatedError, SafeBuf};
 use thiserror::Error;
@@ -17,6 +17,12 @@ pub enum Base128Error {
 
 impl From<TruncatedError> for Base128Error {
     fn from(_: TruncatedError) -> Base128Error {
+        Base128Error::Truncated
+    }
+}
+
+impl From<TryGetError> for Base128Error {
+    fn from(_: TryGetError) -> Self {
         Base128Error::Truncated
     }
 }
@@ -76,11 +82,23 @@ where
         const ONE_MORE_BYTE_CODE_2: u8 = 254;
         const WORD_CODE: u8 = 253;
         const LOWEST_UCODE: u16 = 253;
-        let code = self.try_get_u8()?;
+        let code = self
+            .try_get_u8()
+            .map_err(|_| safer_bytes::error::Truncated {})?;
         match code {
-            WORD_CODE => self.try_get_u16(),
-            ONE_MORE_BYTE_CODE_1 => Ok(self.try_get_u8()? as u16 + LOWEST_UCODE),
-            ONE_MORE_BYTE_CODE_2 => Ok(self.try_get_u8()? as u16 + 2 * LOWEST_UCODE),
+            WORD_CODE => self
+                .try_get_u16()
+                .map_err(|_| safer_bytes::error::Truncated {}),
+            ONE_MORE_BYTE_CODE_1 => Ok(self
+                .try_get_u8()
+                .map_err(|_| safer_bytes::error::Truncated {})?
+                as u16
+                + LOWEST_UCODE),
+            ONE_MORE_BYTE_CODE_2 => Ok(self
+                .try_get_u8()
+                .map_err(|_| safer_bytes::error::Truncated {})?
+                as u16
+                + 2 * LOWEST_UCODE),
             _ => Ok(code as u16),
         }
     }

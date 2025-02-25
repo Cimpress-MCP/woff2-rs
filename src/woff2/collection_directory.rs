@@ -4,7 +4,7 @@ use bytes::{Buf, BufMut};
 use four_cc::FourCC;
 use thiserror::Error;
 
-use crate::buffer_util::{BufExt, SafeBuf, TruncatedError};
+use crate::buffer_util::{BufExt, TruncatedError};
 use crate::ttf_header::{TableDirectory, TableRecord};
 
 #[derive(Debug, Error)]
@@ -55,7 +55,10 @@ impl CollectionHeader {
         buf: &mut impl Buf,
         total_num_tables: u16,
     ) -> Result<Self, CollectionHeaderError> {
-        let version = buf.try_get_u32()?.try_into()?;
+        let version = buf
+            .try_get_u32()
+            .map_err(|_| CollectionHeaderError::Truncated)?
+            .try_into()?;
         let num_fonts = buf.try_get_255_u16()?;
         let fonts = (0..num_fonts)
             .map(|_| {

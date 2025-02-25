@@ -5,7 +5,7 @@ use four_cc::FourCC;
 use thiserror::Error;
 
 use crate::{
-    buffer_util::{pad_to_multiple_of_four, Base128Error, BufExt, SafeBuf, TruncatedError},
+    buffer_util::{pad_to_multiple_of_four, Base128Error, BufExt, TruncatedError},
     checksum::{calculate_checksum, set_checksum_adjustment, ChecksumError},
     glyf_decoder::{decode_glyf_table, GlyfDecoderError},
     ttf_header::TableRecord,
@@ -188,7 +188,9 @@ struct PartialTableDirectoryEntry {
 
 impl PartialTableDirectoryEntry {
     fn from_buf(buffer: &mut impl Buf) -> Result<Self, TableDirectoryError> {
-        let flags = buffer.try_get_u8()?;
+        let flags = buffer
+            .try_get_u8()
+            .map_err(|_| TableDirectoryError::Truncated)?;
         let preprocessing_transformation_version = flags & 0xC0;
         let table_ref = flags & 0x3f;
         let tag = if table_ref == 0x3f {
