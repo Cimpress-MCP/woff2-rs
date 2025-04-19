@@ -186,16 +186,16 @@ impl<'a> Woff2GlyfDecoder<'a, &'a [u8]> {
             running_total_points += number_of_points;
             end_points_of_contours_stream.put_u16(running_total_points - 1);
             for _point_index in 0..number_of_points {
-                let flags = self.flag_stream.try_get_u8()?;
+                let flags = SafeBuf::try_get_u8(&mut self.flag_stream)?;
                 let triplet = &COORD_LUT[(flags & 0x7f) as usize];
                 let data = match triplet.byte_count {
-                    1 => self.glyph_stream.try_get_u8()? as u32,
-                    2 => self.glyph_stream.try_get_u16()? as u32,
+                    1 => SafeBuf::try_get_u8(&mut self.glyph_stream)? as u32,
+                    2 => SafeBuf::try_get_u16(&mut self.glyph_stream)? as u32,
                     3 => {
-                        ((self.glyph_stream.try_get_u8()? as u32) << 16)
-                            | (self.glyph_stream.try_get_u16()? as u32)
+                        ((SafeBuf::try_get_u8(&mut self.glyph_stream)? as u32) << 16)
+                            | (SafeBuf::try_get_u16(&mut self.glyph_stream)? as u32)
                     }
-                    4 => self.glyph_stream.try_get_u32()?,
+                    4 => SafeBuf::try_get_u32(&mut self.glyph_stream)?,
                     _ => panic!(),
                 };
                 let dx = triplet.dx(data);
@@ -264,10 +264,10 @@ impl<'a> Woff2GlyfDecoder<'a, &'a [u8]> {
             .try_copy_to_buf(&mut instructions_stream, instruction_length as usize)?;
 
         if self.bbox_bitmap[glyph_index as usize] {
-            x_min = self.bbox_stream.try_get_i16()?;
-            y_min = self.bbox_stream.try_get_i16()?;
-            x_max = self.bbox_stream.try_get_i16()?;
-            y_max = self.bbox_stream.try_get_i16()?;
+            x_min = SafeBuf::try_get_i16(&mut self.bbox_stream)?;
+            y_min = SafeBuf::try_get_i16(&mut self.bbox_stream)?;
+            x_max = SafeBuf::try_get_i16(&mut self.bbox_stream)?;
+            y_max = SafeBuf::try_get_i16(&mut self.bbox_stream)?;
         }
 
         output_buffer.put_i16(number_of_contours);
@@ -292,17 +292,17 @@ impl<'a> Woff2GlyfDecoder<'a, &'a [u8]> {
     ) -> Result<(), GlyfDecoderError> {
         output_buffer.put_i16(-1);
         if self.bbox_bitmap[glyph_index as usize] {
-            output_buffer.put_i16(self.bbox_stream.try_get_i16()?);
-            output_buffer.put_i16(self.bbox_stream.try_get_i16()?);
-            output_buffer.put_i16(self.bbox_stream.try_get_i16()?);
-            output_buffer.put_i16(self.bbox_stream.try_get_i16()?);
+            output_buffer.put_i16(SafeBuf::try_get_i16(&mut self.bbox_stream)?);
+            output_buffer.put_i16(SafeBuf::try_get_i16(&mut self.bbox_stream)?);
+            output_buffer.put_i16(SafeBuf::try_get_i16(&mut self.bbox_stream)?);
+            output_buffer.put_i16(SafeBuf::try_get_i16(&mut self.bbox_stream)?);
         } else {
             Err(GlyfDecoderError::CompositeGlyphWithoutBbox)?
         }
 
         let mut have_instructions = false;
         loop {
-            let flag_word = self.composite_stream.try_get_u16()?;
+            let flag_word = SafeBuf::try_get_u16(&mut self.composite_stream)?;
             let mut num_bytes = 4usize;
 
             if flag_word & 0x0001 == 0x0001 {
@@ -345,7 +345,7 @@ impl<'a> Woff2GlyfDecoder<'a, &'a [u8]> {
         glyph_index: u16,
         output_vector: &mut Vec<u8>,
     ) -> Result<(), GlyfDecoderError> {
-        let number_of_contours = self.n_contour_stream.try_get_i16()?;
+        let number_of_contours = SafeBuf::try_get_i16(&mut self.n_contour_stream)?;
         match number_of_contours {
             0 => Ok(()),
             num if num > 0 => {

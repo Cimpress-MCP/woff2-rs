@@ -1,10 +1,10 @@
 //! The WOFF2 collection directory
 
-use bytes::{Buf, BufMut};
+use bytes::{Buf, BufMut, TryGetError};
 use four_cc::FourCC;
 use thiserror::Error;
 
-use crate::buffer_util::{BufExt, SafeBuf, TruncatedError};
+use crate::buffer_util::{BufExt, TruncatedError};
 use crate::ttf_header::{TableDirectory, TableRecord};
 
 #[derive(Debug, Error)]
@@ -21,6 +21,11 @@ pub enum CollectionHeaderError {
 
 impl From<TruncatedError> for CollectionHeaderError {
     fn from(TruncatedError: TruncatedError) -> CollectionHeaderError {
+        CollectionHeaderError::Truncated
+    }
+}
+impl From<TryGetError> for CollectionHeaderError {
+    fn from(_: TryGetError) -> CollectionHeaderError {
         CollectionHeaderError::Truncated
     }
 }
